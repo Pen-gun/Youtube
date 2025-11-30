@@ -1,7 +1,7 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import apiError from '../utils/ApiError.js'
 import { User } from '../models/user.model.js'
-import { uploadToCloudinary } from '../utils/cloudinary.js';
+import { upLoadOnCloudinary } from '../utils/cloudinary.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -36,8 +36,8 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new apiError(400, 'No avatar image found')
 
     }
-    const avatar = await uploadToCloudinary(avatarLocalPath);
-    const coverImage = await uploadToCloudinary(coverImageLocalPath);
+    const avatar = await upLoadOnCloudinary(avatarLocalPath);
+    const coverImage = await upLoadOnCloudinary(coverImageLocalPath);
 
     if(!avatar){
         throw new apiError (500, 'unable to upload avatar image')
