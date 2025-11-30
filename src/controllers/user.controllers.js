@@ -17,7 +17,6 @@ const registerUser = asyncHandler(async (req, res) => {
     //send response
     //  Get-Process -Name node | Stop-Process -Force 
     const { fullName, username, email, password } = req.body
-    console.log('email:', email);
     if (
         [fullName, username, email, password].some((field) =>
             field?.trim() === "")
@@ -30,8 +29,13 @@ const registerUser = asyncHandler(async (req, res) => {
     if (existed) {
         throw new apiError(409, "already existed user!")
     }
-    const avatarLocalPath = req.files?.Avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    let coverImageLocalPath = null;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+        coverImageLocalPath = req.files.coverImage[0].path;
+    }
+
     if (!avatarLocalPath) {
         throw new apiError(400, 'No avatar image found')
 
