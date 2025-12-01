@@ -87,16 +87,16 @@ const loginUser = asyncHandler(async (req, res) => {
     //generate refresh token and access token
     //send cookies
     const { email, username, password } = req.body;
-    if (!email || !username) {
+    if (!email && !username) {
         throw new apiError(400, "username or email missing!");
     }
     const user = await User.findOne({
         $or: [
             {
-                email: email
+                email: email,
             },
             {
-                username: username.toLowerCase()
+                username: username,
             }
         ]
     });
@@ -117,10 +117,10 @@ const loginUser = asyncHandler(async (req, res) => {
         secure: true,
     };
     res.status(200).cookie('refreshToken', refreshToken, options)
-    .cookie('accessToken', accessToken, options)
-    .json(
-        new ApiResponse(200, { user: loggedInUser, accessToken }, 'user logged in successfully')
-    );
+        .cookie('accessToken', accessToken, options)
+        .json(
+            new ApiResponse(200, { user: loggedInUser, accessToken }, 'user logged in successfully')
+        );
 });
 
 const logOutUser = asyncHandler(async (req, res) => {
@@ -145,13 +145,13 @@ const logOutUser = asyncHandler(async (req, res) => {
         secure: true,
     }
     return res
-    .statur(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json(
-        new ApiResponse(200, null, "user logged out successfully")
-    );
-    
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(
+            new ApiResponse(200, null, "user logged out successfully")
+        );
+
 });
 
 export { registerUser, loginUser, logOutUser };
