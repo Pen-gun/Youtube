@@ -161,8 +161,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new apiError(401, "refresh token missing!");
     }
     const decodedToken = jwt.verify(incommingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
-    console.log('decodedToken', decodedToken);
-    const user = await User.findById(decodedToken?._id);
+    const user = await User.findById(decodedToken?.userId);
     if (!user) {
         throw new apiError(404, "user not found!");
     }
