@@ -168,7 +168,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     if (incommingRefreshToken !== user?.refreshToken) {
         throw new apiError(401, "invalid refresh token!");
     }
-    console.log('user', user);
     const options = {
         httpOnly: true,
         secure: true,
@@ -189,10 +188,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-    console.log('req.user', req.user);
-    console.log('req.body', req.body);
-    const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword) {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    if( newPassword !== confirmPassword){
+        throw new apiError(400, "new password and confirm password do not match");
+    }
+    if (!oldPassword || !newPassword ) {
         throw new apiError(400, "old password and new password are required");
     }
     const user = await User.findById(req.user._id);
@@ -201,10 +201,38 @@ const changePassword = asyncHandler(async (req, res) => {
         throw new apiError(401, "old password is incorrect");
     }
     user.password = newPassword;
-    await user.save();
+    await user.save({ validateBeforeSave: false });
     return res.status(200).json(
         new ApiResponse(200, null, "password changed successfully")
     );
 });
 
-export { registerUser, loginUser, logOutUser, refreshAccessToken, changePassword };
+const getCurrentUser = asyncHandler(async (req, res) => {
+    return res.status(200).json(
+        new ApiResponse(200, req.user, "current user fetched successfully")
+    );
+});
+
+const updateAccount = asyncHandler(async (req, res) => {
+    const { fullName, username, email} = req.body;
+    if(!fullName && !username && !email){
+        throw new apiError(400, "at least one field is required to update!");
+    }
+    const user = await User.findById(req.user._id);
+    const existed = await User.findOne({
+        _id: { $ne: user._id },
+        $or: [{ username }, { email }]
+    });
+    if (existed) {
+        throw new apiError(409, "username or email already in use!")
+    }
+    if (fullName) user.fullName = fullName;
+    if (username) user.username = username;
+    if (email) user.email = email;
+    await user.save();
+    return res.status(200).json(
+        new ApiResponse(200, user, "account updated successfully")
+    );
+});
+
+export { registerUser, loginUser, logOutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccount };
