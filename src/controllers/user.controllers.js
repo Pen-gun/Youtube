@@ -214,24 +214,41 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccount = asyncHandler(async (req, res) => {
-    const { fullName, username, email} = req.body;
-    if(!fullName && !username && !email){
-        throw new apiError(400, "at least one field is required to update!");
+    const { fullName, username, email } = req.body;
+
+    // Require at least one field
+    if (!fullName && !username && !email) {
+        throw new apiError(400, "At least one field is required to update!");
     }
-    const user = await User.findById(req.user._id);
+
+    const userId = req.user._id;
     const existed = await User.findOne({
-        _id: { $ne: user._id },
-        $or: [{ username }, { email }]
+        _id: { $ne: userId },  // exclude current user
+        $or: [
+            username ? { username } : null,
+            email ? { email } : null
+        ].filter(Boolean)
     });
+
     if (existed) {
-        throw new apiError(409, "username or email already in use!")
+        throw new apiError(409, "Username or email already in use!");
     }
-    if (fullName) user.fullName = fullName;
-    if (username) user.username = username;
-    if (email) user.email = email;
-    await user.save();
+
+    // Build update object only with provided fields
+    const updateFields = {};
+    if (fullName) updateFields.fullName = fullName;
+    if (username) updateFields.username = username;
+    if (email) updateFields.email = email;
+
+    // Update and return new user
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+    );
+
     return res.status(200).json(
-        new ApiResponse(200, user, "account updated successfully")
+        new ApiResponse(200, updatedUser, "Account updated successfully")
     );
 });
 
