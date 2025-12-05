@@ -189,10 +189,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changePassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword, confirmPassword } = req.body;
-    if( newPassword !== confirmPassword){
+    if (newPassword !== confirmPassword) {
         throw new apiError(400, "new password and confirm password do not match");
     }
-    if (!oldPassword || !newPassword ) {
+    if (!oldPassword || !newPassword) {
         throw new apiError(400, "old password and new password are required");
     }
     const user = await User.findById(req.user._id);
@@ -252,4 +252,42 @@ const updateAccount = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, logOutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccount };
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const avatarPath = req.file?.path;
+    if (!avatarPath) {
+        throw new apiError(400, 'No avatar image found');
+    }
+    const avatar = await upLoadOnCloudinary(avatarPath);
+    if (!avatar) {
+        throw new apiError(500, 'unable to upload avatar image');
+    }
+    const userId = req.user._id;
+    const updateUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: { avatar: avatar.url } },
+        { new: true }
+    ).select('-password -refreshToken');
+    return res.status(200).json(
+        new ApiResponse(200, updateUser, 'User avatar updated successfully')
+    );
+});
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    const coverImagePath = req.file?.path;
+    if (!coverImagePath) {
+        throw new apiError(400, 'No cover image found');
+    }
+    const coverImage = await upLoadOnCloudinary(coverImagePath);
+    if (!coverImage) {
+        throw new apiError(500, 'unable to upload cover image');
+    }
+    const userId = req.user._id;
+    const updateUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: { coverImage: coverImage.url } },
+        { new: true }
+    ).select('-password -refreshToken');
+    return res.status(200).json(
+        new ApiResponse(200, updateUser, 'User cover image updated successfully')
+    );
+});
+export { registerUser, loginUser, logOutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccount, updateUserAvatar, updateUserCoverImage };
