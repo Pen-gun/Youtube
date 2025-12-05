@@ -290,4 +290,67 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         new ApiResponse(200, updateUser, 'User cover image updated successfully')
     );
 });
-export { registerUser, loginUser, logOutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccount, updateUserAvatar, updateUserCoverImage };
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const {username} = req.params;
+    if(!username.trim()){
+        throw new apiError(400, "username is required");
+    }
+    const channel = await User.aggregate([
+        {
+            $match: {username: username}
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "numberOfSubscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedChannels"
+            }
+        },
+        {
+            $addFields: {
+                numberOfSubscribers: { $size: "$numberOfSubscribers" },
+                subscribedChannels: { $size: "$subscribedChannels" },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$subscribedChannels.subscriber"]},
+                            then: true,
+                            else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                username: 1,
+                email: 1,
+                avatar: 1,
+                coverImage: 1,
+                numberOfSubscribers: 1,
+                subscribedChannels: 1,
+                isSubscribed: 1,
+                password: 0,
+                refreshToken: 0
+            }
+                
+        }
+    ])
+    if(!channel.length){
+        throw new apiError(404, "channel not found");
+    }
+    return res.status(200).json(
+        new ApiResponse(200, channel[0], "Channel profile retrieved successfully")
+    );
+});
+
+export { registerUser, loginUser, logOutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccount, updateUserAvatar, updateUserCoverImage, getUserChannelProfile };
