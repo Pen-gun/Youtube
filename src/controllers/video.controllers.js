@@ -1,11 +1,12 @@
 import { Video } from "../models/video.model.js";
-import ApiResponse from "../utils/ApiResponse";
+import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js'
 import { upLoadOnCloudinary } from '../utils/cloudinary.js';
 
 const ownerCheck = async (videoId, userId) => {
-    const video = await Video.findById(videoId).select('owner');
+    // Include isPublished so toggle routes can flip the flag correctly
+    const video = await Video.findById(videoId).select('owner isPublished');
     if (!video) {
         throw new ApiError(404, 'Video not found');
     }
@@ -68,16 +69,18 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if (!cloudinaryVideoResponse) {
         throw new ApiError(500, 'Failed to upload video to cloudinary');
     }
+    console.log(cloudinaryVideoResponse);
     const cloudinaryThumbnailResponse = await upLoadOnCloudinary(thumbnailLocalPath);
     if (!cloudinaryThumbnailResponse) {
         throw new ApiError(500, 'Failed to upload thumbnail to cloudinary');
     }
+    console.log(cloudinaryThumbnailResponse);
     const newVideo = new Video({
         title,
         description,
-        videoUrl: cloudinaryVideoResponse.secure_url,
-        thumbnailUrl: cloudinaryThumbnailResponse.secure_url,
-        duration: cloudinaryVideoResponse.duration,
+        videoFile: cloudinaryVideoResponse.secure_url,
+        thumbnail: cloudinaryThumbnailResponse.secure_url,
+        duration: cloudinaryVideoResponse.duration || 0,
         views: 0,
         isPublished: true,
         owner: req.user._id,
@@ -147,7 +150,7 @@ const togglePublishVideo = asyncHandler(async (req, res) => {
     }
     video.isPublished = !video.isPublished;
     await video.save();
-    return res.status(200).json(new ApiResponse(200, video, `Video ${video.isPublished ? 'published' : 'unpublished'} successfully`));
+    return res.status(200).json(new ApiResponse(200, video, `Video isPublished: ${video.isPublished ? 'true' : 'false'} successfully`));
 });
 
 export { getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo, togglePublishVideo };
