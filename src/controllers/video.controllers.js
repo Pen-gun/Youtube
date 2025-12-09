@@ -12,13 +12,14 @@ const ownerCheck = async (videoId, userId) => {
     if (video.owner.toString() !== userId.toString()) {
         throw new ApiError(403, 'You are not authorized to perform this action');
     }
+    return video;
 };
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy = 'createdAt', order = 'desc', userId } = req.query;
     const filter = {};
     if (userId) {
-        filter.userId = userId;
+        filter.owner = userId;
     }
     if (query) {
         filter.$or = [
@@ -26,8 +27,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
             { description: { $regex: query, $options: 'i' } }
         ];
     }
-    const pageNumber = parseInt(page);
-    const limitNumber = parseInt(limit);
+    const pageNumber = Math.max(1, parseInt(page) || 1);
+    const limitNumber = Math.min(100, Math.max(1, parseInt(limit) || 10));
     const videos = await Video.find(filter)
         .sort({ [sortBy]: order === 'desc' ? -1 : 1 })
         .skip((pageNumber - 1) * limitNumber)
@@ -135,13 +136,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if (!video) {
         throw new ApiError(404, 'Video not found');
     }
-    return res.status(200).json(new ApiResponse(200, video, 'Video deleted successfully'));
+    return res.status(200).json(new ApiResponse(200, null, 'Video deleted successfully'));
 });
 
 const togglePublishVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
-    await ownerCheck(videoId, req.user._id);
-    const video = await Video.findById(videoId);
+    const video = await ownerCheck(videoId, req.user._id);
     if (!video) {
         throw new ApiError(404, 'Video not found');
     }
