@@ -3,26 +3,45 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { Like} from "../models/like.model.js";
 
-const likeVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params;
-    const video = await Like.findOne({ video: videoId, likedBy: req.user._id });
+const toogleLike = asyncHandler(async (req, res) => {
+    const { itemId, itemType } = req.body;
+    if (!itemId || !itemType) {
+        throw new ApiError(400, 'Item ID and Item Type are required');
+    }
+    const validTypes = ['comment', 'video', 'tweet'];
+    if (!validTypes.includes(itemType)) {
+        throw new ApiError(400, 'Invalid Item Type');
+    }
+    const filter ={
+        likedBy: req.user._id,
+        [itemType]: itemId
+    }
+    const existingLike = await Like.findOne(filter);
+    if (existingLike) {
+        await Like.findByIdAndDelete(existingLike._id);
+        return res.status(200).json(new ApiResponse(200, null, 'Like removed successfully'));
+    }
+    const newLike = await Like.create(filter);
+    res.status(201).json(new ApiResponse(201, newLike, 'Like added successfully'));
 });
-const unlikeVideo = asyncHandler(async (req, res) => {});
-const fetchVideoLikes = asyncHandler(async (req, res) => {});
-const likeComment = asyncHandler(async (req, res) => {});
-const unlikeComment = asyncHandler(async (req, res) => {});
-const fetchCommentLikes = asyncHandler(async (req, res) => {});
-const likeTweet = asyncHandler(async (req, res) => {});
-const unlikeTweet = asyncHandler(async (req, res) => {});
-const fetchTweetLikes = asyncHandler(async (req, res) => {});
+
+const fetchLikes = asyncHandler(async (req, res) => {
+    const { itemId, itemType } = req.query;
+    if (!itemId || !itemType) {
+        throw new ApiError(400,null, 'Item ID and Item Type are required');
+    }
+    const validTypes = ['comment', 'video', 'tweet'];
+    if (!validTypes.includes(itemType)) {
+        throw new ApiError(400, null,'Invalid Item Type');
+    }
+    const filter ={
+        [itemType]: itemId
+    }
+    const likes = await Like.find(filter).populate('likedBy', 'username avatar');
+    res.status(200).json(new ApiResponse(200, likes, 'Likes fetched successfully'));
+});
+
 export {
-    fetchVideoLikes,
-    fetchCommentLikes,
-    fetchTweetLikes,
-    likeVideo,
-    unlikeVideo,
-    likeComment,
-    unlikeComment,
-    likeTweet,
-    unlikeTweet
+    toogleLike,
+    fetchLikes
 };
