@@ -112,7 +112,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         if (!cloudinaryThumbnailResponse) {
             throw new ApiError(500, 'Failed to upload thumbnail to cloudinary');
         }
-        updateData.thumbnailUrl = cloudinaryThumbnailResponse.secure_url;
+        updateData.thumbnail = cloudinaryThumbnailResponse.secure_url;
     }
     if (title) {
         updateData.title = title;

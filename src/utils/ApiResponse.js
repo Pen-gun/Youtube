@@ -4,7 +4,7 @@ class ApiResponse {
         data = null,
         message = "Request successful",
     ){
-        this.statusCode = statusCode < 400;
+        this.statusCode = statusCode;
         this.data = data;
         this.message = message;
         this.success = true;

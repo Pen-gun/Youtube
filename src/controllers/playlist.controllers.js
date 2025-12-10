@@ -1,5 +1,5 @@
-import ApiError from "../utils/ApiError";
-import ApiResponse from "../utils/ApiResponse";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from '../utils/asyncHandler.js';
 import { Playlist } from "../models/playlist.model.js";
 import { Video } from "../models/video.model.js";
@@ -75,6 +75,10 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     if (!playlist) {
         throw new ApiError(404, 'Playlist not found');
     }
+    //owner check
+    if (playlist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, 'You are not authorized to modify this playlist');
+    }
     const video = await Video.findById(videoId);
     if (!video) {
         throw new ApiError(404, 'Video not found');
@@ -94,6 +98,11 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     if (!playlist) {
         throw new ApiError(404, 'Playlist not found');
     }
+    //owner check
+    if (playlist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, 'You are not authorized to modify this playlist');
+    }
+
     const videoIndex = playlist.videos.indexOf(videoId);
     if (videoIndex === -1) {
         throw new ApiError(404, 'Video not found in playlist');
