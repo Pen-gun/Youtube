@@ -3,8 +3,6 @@ import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { Subscription } from "../models/subscription.model.js";
 
-import mongoose from "mongoose";
-
 const subscribeToggle = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
 
